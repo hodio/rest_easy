@@ -1,5 +1,4 @@
-from permission.logics import AuthorPermissionLogic
-from permission.logics import CollaboratorsPermissionLogic
+from permission.logics import AuthorPermissionLogic, CollaboratorsPermissionLogic, GroupInPermissionLogic
 
 '''
 EXAMPLE

@@ -2,7 +2,7 @@ from django.conf.urls import url, include
 from django.contrib.auth.models import User
 from example.models import Person
 from rest_framework import routers, serializers, viewsets
-
+import re
 import permission
 permission.autodiscover()
 
@@ -76,13 +76,23 @@ def generateModelResources():
             # Create class and add to dictionary
             # Don't add Historical Data to API !!! NOTE : This needs to be refactored and data moved into REST_EASY_IGNORE_APPS in settings, to allow for regex matching of terms.
             # Also could add in global permissions rules as REST_EASY_APPS_PERMISSIONS = ( ('Historical*','R')
-            if str(app_model.__name__[0:10]) != 'XXXHistorical': 
+            ignore = False
+            try:
+                settings.REST_EASY_IGNORE_MODELS
+            except:
+                pass
+            else:
+                for ignore_pattern in settings.REST_EASY_IGNORE_MODELS:
+                    if re.match(ignore_pattern,app_model.__name__) is not None:
+                        ignore = True
+            if not ignore: 
                 model_resources[class_name] = type(class_name,(viewsets.ModelViewSet,), {
                     'queryset' : queryset,
                     'serializer_class' : serializer
                 }) 
             
     return model_resources
+
 # Import Model Resource Generator & Register w/ django-rest-framework
 model_resources = generateModelResources()
 for class_name, class_object in model_resources.iteritems():
