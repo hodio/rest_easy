@@ -42,7 +42,8 @@ def generateModelResources():
                     model_fields + (field.name,)
             model_properties = {}
             for attribute in dir(app_model):
-                if attribute[0:1] != '_' and attribute != 'pk':# and str(app_model.__name__[0:10]) != 'Historical': 
+                # Ignore hidden attributes and te primary key
+                if attribute[0:1] != '_' and attribute != 'pk':
                     try:
                         attribute_value = getattr(app_model,attribute)
                         if isinstance(attribute_value,property):
@@ -55,7 +56,6 @@ def generateModelResources():
             # Creat the class properties, append to dictionary also append to field names
             for property_name in model_properties:
                 serializer_dictionary[property_name] = serializers.Field(source=property_name)
-                #model_fields + (property_name,)
                 
             # Create Django Rest Framework Serializer
             class_name = app_model.__name__+'Serializer'
@@ -73,9 +73,9 @@ def generateModelResources():
                 class_name = app_model._meta.verbose_name_plural
 
             queryset = app_model.objects.all()
+
             # Create class and add to dictionary
-            # Don't add Historical Data to API !!! NOTE : This needs to be refactored and data moved into REST_EASY_IGNORE_APPS in settings, to allow for regex matching of terms.
-            # Also could add in global permissions rules as REST_EASY_APPS_PERMISSIONS = ( ('Historical*','R')
+            # Check pattern from REST_EASY_IGNORE_APPS in settings.
             ignore = False
             try:
                 settings.REST_EASY_IGNORE_MODELS
@@ -86,9 +86,11 @@ def generateModelResources():
                     if re.match(ignore_pattern,app_model.__name__) is not None:
                         ignore = True
             if not ignore: 
+                # Create DRF ViewSet
                 model_resources[class_name] = type(class_name,(viewsets.ModelViewSet,), {
-                    'queryset' : queryset,
-                    'serializer_class' : serializer
+                    'queryset'          : queryset,
+                    'serializer_class'  : serializer,
+                    'filter_fields'     : ('name',) # !!! NOTE: May need to restrict this later
                 }) 
             
     return model_resources
