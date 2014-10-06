@@ -6,6 +6,11 @@ import re
 import permission
 permission.autodiscover()
 
+# !!! DEBUG
+import logging
+logger = logging.getLogger(__name__)
+# !!! NED DEBUG
+
 # Serializers define the API representation.
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -35,11 +40,14 @@ def generateModelResources():
         app_models = get_app(app_name)
         for app_model in get_models(app_models):
             
-            # Assemble field lists
+            # Assemble fields into a tuple
             model_fields = ()
+            model_filter_fields = ()
             for field in app_model._meta.fields:
                 if field.name != 'id':
-                    model_fields + (field.name,)
+                    model_fields = model_fields + (field.name,)
+
+            # Assemble Properties into a dictionary
             model_properties = {}
             for attribute in dir(app_model):
                 # Ignore hidden attributes and te primary key
@@ -51,18 +59,22 @@ def generateModelResources():
                     except:
                         pass
 
+            # Instantiate Dictionary
             serializer_dictionary = {}
             
             # Creat the class properties, append to dictionary also append to field names
             for property_name in model_properties:
                 serializer_dictionary[property_name] = serializers.Field(source=property_name)
-                
+            logger.debug("Model Fields Serializer")
+            logger.debug(model_fields)
             # Create Django Rest Framework Serializer
             class_name = app_model.__name__+'Serializer'
             class Meta:
-                 model = app_model
-                 fields = model_fields
-                 
+                 model  = app_model
+                 # !!! NEED TO DETERMINE USAGE FOR THIS
+                 # currently if disabled will show all fields, when do we want to show collabs?
+                 #fields = model_fields # !!! Is this needed?
+               
             # Add meta class to dictionary
             serializer_dictionary['Meta'] = Meta
             serializer = type(class_name,(serializers.HyperlinkedModelSerializer,), serializer_dictionary) 
@@ -77,20 +89,23 @@ def generateModelResources():
             # Create class and add to dictionary
             # Check pattern from REST_EASY_IGNORE_APPS in settings.
             ignore = False
+
             try:
                 settings.REST_EASY_IGNORE_MODELS
             except:
-                pass
+                logger.debug("ERROR!!! "+app_model.__name__+" IGNORED")
             else:
                 for ignore_pattern in settings.REST_EASY_IGNORE_MODELS:
                     if re.match(ignore_pattern,app_model.__name__) is not None:
                         ignore = True
             if not ignore: 
+                logger.debug("Model Fields Viewset")
+                logger.debug(model_fields)
                 # Create DRF ViewSet
                 model_resources[class_name] = type(class_name,(viewsets.ModelViewSet,), {
                     'queryset'          : queryset,
                     'serializer_class'  : serializer,
-                    'filter_fields'     : ('name',) # !!! NOTE: May need to restrict this later
+                    'filter_fields'     : model_fields# !!! NOT Working as a TUPLE??!
                 }) 
             
     return model_resources
