@@ -1,33 +1,34 @@
 from django.conf.urls import url, include
 from django.contrib.auth.models import User
-from example.models import Person
 from rest_framework import routers, serializers, viewsets
 import re
+
+# Permissions
 import permission
 permission.autodiscover()
+from django.conf            import settings
+from django.db.models       import get_models, get_app
 
 # !!! DEBUG
 import logging
 logger = logging.getLogger(__name__)
 # !!! NED DEBUG
 
-# Serializers define the API representation.
+# User Serialization
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
-        model = User
-        fields = ('url', 'username', 'email', 'is_staff')
+        model   = User
+        fields  = ('url', 'username', 'email', 'is_staff')
         
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset         = User.objects.all()
     serializer_class = UserSerializer
     
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
 
-# Dynamic Endpoint Generation
-from django.conf            import settings
-from django.db.models       import get_models, get_app
+
 
 def generateModelResources():
     
@@ -65,8 +66,7 @@ def generateModelResources():
             # Creat the class properties, append to dictionary also append to field names
             for property_name in model_properties:
                 serializer_dictionary[property_name] = serializers.Field(source=property_name)
-            logger.debug("Model Fields Serializer")
-            logger.debug(model_fields)
+
             # Create Django Rest Framework Serializer
             class_name = app_model.__name__+'Serializer'
             class Meta:
@@ -89,18 +89,16 @@ def generateModelResources():
             # Create class and add to dictionary
             # Check pattern from REST_EASY_IGNORE_APPS in settings.
             ignore = False
-
             try:
                 settings.REST_EASY_IGNORE_MODELS
             except:
-                logger.debug("ERROR!!! "+app_model.__name__+" IGNORED")
+                pass
             else:
                 for ignore_pattern in settings.REST_EASY_IGNORE_MODELS:
                     if re.match(ignore_pattern,app_model.__name__) is not None:
                         ignore = True
             if not ignore: 
-                logger.debug("Model Fields Viewset")
-                logger.debug(model_fields)
+        
                 # Create DRF ViewSet
                 model_resources[class_name] = type(class_name,(viewsets.ModelViewSet,), {
                     'queryset'          : queryset,
