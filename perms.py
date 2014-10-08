@@ -1,4 +1,4 @@
-from permission.logics import AuthorPermissionLogic, CollaboratorsPermissionLogic, GroupInPermissionLogic
+from permission.logics import AuthorPermissionLogic, CollaboratorsPermissionLogic, GroupInPermissionLogic, StaffPermissionLogic
 from django.conf            import settings
 from django.db.models       import get_models, get_app
 '''
@@ -18,3 +18,5 @@ for app_name in settings.REST_EASY_APPS:
     for app_model in get_models(app_models):
     	PERMISSION_LOGICS = PERMISSION_LOGICS + (( app_name+'.'+app_model.__name__,AuthorPermissionLogic(field_name='owner'),),)
     	PERMISSION_LOGICS = PERMISSION_LOGICS + (( app_name+'.'+app_model.__name__,CollaboratorsPermissionLogic(),),)
+    	#PERMISSION_LOGICS = PERMISSION_LOGICS + (( app_name+'.'+app_model.__name__,GroupInPermissionLogic(),),)
+    	PERMISSION_LOGICS = PERMISSION_LOGICS + (( app_name+'.'+app_model.__name__,StaffPermissionLogic(),),)

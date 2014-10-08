@@ -28,8 +28,6 @@ class UserViewSet(viewsets.ModelViewSet):
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
 
-
-
 def generateModelResources():
     
     model_resources = {}
@@ -98,7 +96,7 @@ def generateModelResources():
                     if re.match(ignore_pattern,app_model.__name__) is not None:
                         ignore = True
             if not ignore: 
-        
+
                 # Create DRF ViewSet
                 model_resources[class_name] = type(class_name,(viewsets.ModelViewSet,), {
                     'queryset'          : queryset,
